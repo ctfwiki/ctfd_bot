@@ -2,7 +2,7 @@
 
 如非重大问题不再更新，不提供问询服务
 
-代码逻辑参考了CTFd-Bot<sup>[2]</sup>，并针对特定平台（https://ctf.show）稍有修改和优化
+代码逻辑参考了CTFd-Bot<sup>[2]</sup>，并针对特定平台（ https://ctf.show ）稍有修改和优化
 
 ## 环境配置
 
