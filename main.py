@@ -65,7 +65,8 @@ def get_attempt_list(page=1):
 
 # 更新并返回session
 def update_session():
-    global KEY_SESSION
+    KEY_SESSION = "ctfd_session"
+
     session = redis_get(KEY_SESSION)
     if not session or not check_session(session):
         session = login_get_session()
@@ -81,7 +82,6 @@ def update_user_list():
     pre_page_user = 50
     total = redis_hlen(KEY_USERNAME)
     page = pages = int((total - 1)/pre_page_user) + 1
-    total_user = 0
     while page <= pages:
         total_user,page,pages,userList = get_user_list(page)
         idname = {}
@@ -89,15 +89,28 @@ def update_user_list():
             idname[user['id']] = user['name']
         if len(idname) > 0:
             redis_hmset(KEY_USERNAME, idname)
+            logging.info("新用户注册: " + str(idname))
         page += 1
     return total_user
+
+async def deal_user_session():
+    global session
+    while True:
+        try:
+            session = update_session()
+            if not session:
+                await asyncio.sleep(SLEEP_SECOND*5)
+                continue
+            await asyncio.sleep(SLEEP_SECOND)
+        except:
+            logging.error('[error0]fail to get api info,continue.\n' + traceback.format_exc())
+            await asyncio.sleep(SLEEP_SECOND*5)
 
 # 监听新注册用户
 async def deal_user_list():
     global SLEEP_SECOND,session,total_user
     while True:
         try:
-            session = update_session()
             if not session:
                 await asyncio.sleep(SLEEP_SECOND*5)
                 continue
@@ -120,7 +133,6 @@ async def deal_attemp_list():
     page = sub_pages
     while True:
         try:
-            session = update_session()
             if not session:
                 await asyncio.sleep(SLEEP_SECOND*5)
                 continue
@@ -129,10 +141,6 @@ async def deal_attemp_list():
                 await asyncio.sleep(SLEEP_SECOND)
                 continue
             if total_correct < total:
-                # page=1  total_correct=10  total=15    10,15
-                # page=1  total_correct=10  total=39    10,20
-                # page=2  total_correct=10  total=39    0,19
-                # page=1  total_correct=16  total=17
                 start = total_correct - (page - 1) * per_page_submit
                 if start < 0:
                     start = 0 # 3.跨页重置为0
@@ -173,7 +181,6 @@ async def deal_attemp_list():
     pass
 
 if __name__ == '__main__':
-    KEY_SESSION = "ctfd_session"
     KEY_USERNAME = "ctfd_user_list"
     SLEEP_SECOND = 3
 
@@ -184,6 +191,6 @@ if __name__ == '__main__':
     logging.info("总正确提交数: %s", total_correct)
 
     loop = asyncio.get_event_loop()
-    tasks = [deal_user_list(),deal_attemp_list()]
+    tasks = [deal_user_session(),deal_user_list(),deal_attemp_list()]
     loop.run_until_complete(asyncio.wait(tasks))
     loop.close()
