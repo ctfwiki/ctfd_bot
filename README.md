@@ -38,7 +38,11 @@ docker run -d --rm --name redis -v /data/redis:/data \
 sudo python3 main.py &
 ```
 
-如果不加sudo，退出shell后会停止，需要用其他用户挂起进程
+如果不加sudo，退出shell后会停止，需要用其他用户挂起进程。或者使用nohup
+
+```bash
+nohup python3 main.py &
+```
 
 ## 参考链接
 
